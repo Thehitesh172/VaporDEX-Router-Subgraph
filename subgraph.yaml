@@ -1,0 +1,47 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Router
+    network: avalanche
+    source:
+      address: "0xdef9ee39fd82ee57a1b789bc877e2cbd88fd5cae"
+      abi: Router
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Recovered
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+        - RouterSwap
+        - UpdatedAdapters
+        - UpdatedFeeClaimer
+        - UpdatedMinFee
+        - UpdatedTrustedTokens
+      abis:
+        - name: Router
+          file: ./abis/Router.json
+      eventHandlers:
+        - event: Recovered(indexed address,uint256)
+          handler: handleRecovered
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+        - event: RouterSwap(indexed address,indexed address,uint256,uint256)
+          handler: handleRouterSwap
+        - event: UpdatedAdapters(address[])
+          handler: handleUpdatedAdapters
+        - event: UpdatedFeeClaimer(address,address)
+          handler: handleUpdatedFeeClaimer
+        - event: UpdatedMinFee(uint256,uint256)
+          handler: handleUpdatedMinFee
+        - event: UpdatedTrustedTokens(address[])
+          handler: handleUpdatedTrustedTokens
+      file: ./src/router.ts
