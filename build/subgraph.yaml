@@ -1,6 +1,6 @@
 specVersion: 0.0.5
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: Router
@@ -25,7 +25,7 @@ dataSources:
         - UpdatedTrustedTokens
       abis:
         - name: Router
-          file: ./abis/Router.json
+          file: Router/abis/Router.json
       eventHandlers:
         - event: Recovered(indexed address,uint256)
           handler: handleRecovered
@@ -45,4 +45,4 @@ dataSources:
           handler: handleUpdatedMinFee
         - event: UpdatedTrustedTokens(address[])
           handler: handleUpdatedTrustedTokens
-      file: ./src/router.ts
+      file: Router/Router.wasm
