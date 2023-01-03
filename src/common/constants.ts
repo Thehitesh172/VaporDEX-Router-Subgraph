@@ -74,9 +74,9 @@ export const MINIMUM_LIQUIDITY_FOUR_HUNDRED_THOUSAND = new BigDecimal(
 );
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const VAPORDEX_ROUTER_ADDRESS = changetype<Address>(
+export const VAPORDEX_ROUTER_ADDRESS = Address.fromString(
   "0xdef9ee39fd82ee57a1b789bc877e2cbd88fd5cae"
 );
-export const USDC_ADDRESS = changetype<Address>(
+export const USDC_ADDRESS = Address.fromString(
   "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"
 );

@@ -43,7 +43,7 @@ type RouterSwap @entity(immutable: true) {
   tokenOut: Bytes! # address
   amountIn: BigInt! # uint256
   amountOut: BigInt! # uint256
-  usdValue: BigInt!
+  usdValue: BigDecimal!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -93,8 +93,10 @@ type Token @entity {
   id: Bytes!
   name: String!
   symbol: String!
+  usdPrice: BigDecimal!
   totalTokensSwapped: BigInt!
-  numberOfSwaps: BigInt!
+  numberOfBuys: BigInt!
+  numberOfSells: BigInt!
   totalVolumeUSD: BigInt!
   totalSupply: BigInt!
 }

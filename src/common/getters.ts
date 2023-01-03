@@ -1,8 +1,27 @@
-import { BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
-import { RouterSwap as RouterSwapEvent } from "../../generated/Router/Router";
+import {
+  Address,
+  BigDecimal,
+  BigInt,
+  Bytes,
+  ethereum,
+} from "@graphprotocol/graph-ts";
+import {
+  Router,
+  RouterSwap as RouterSwapEvent,
+} from "../../generated/Router/Router";
 import { Token, User } from "../../generated/schema";
-import { BIGINT_ONE, BIGINT_ZERO, DEFAULT_DECIMALS } from "./constants";
+import {
+  BIGINT_HUNDRED,
+  BIGINT_ONE,
+  BIGINT_THOUSAND,
+  BIGINT_THREE,
+  BIGINT_ZERO,
+  DEFAULT_DECIMALS,
+  USDC_ADDRESS,
+  VAPORDEX_ROUTER_ADDRESS,
+} from "./constants";
 import { ERC20 } from "../../generated/Router/ERC20";
+
 export function getOrCreateUser(event: ethereum.Event): User {
   let user = User.load(event.transaction.from);
   if (user === null) {
@@ -15,23 +34,26 @@ export function getOrCreateUser(event: ethereum.Event): User {
   return user;
 }
 
-export function getOrCreateToken(event: RouterSwapEvent): Token {
-  let token = Token.load(event.params.tokenIn);
+export function getOrCreateToken(address: Address): Token {
+  let token = Token.load(address);
 
   if (token === null) {
-    token = new Token(event.params.tokenIn);
-    token.id = event.params.tokenIn;
-    token.numberOfSwaps = BIGINT_ZERO;
+    token = new Token(address);
+    token.id = address;
     token.totalTokensSwapped = BIGINT_ZERO;
     token.totalVolumeUSD = BIGINT_ZERO;
 
-    let erc20 = ERC20.bind(event.params.tokenIn);
+    let erc20 = ERC20.bind(address);
     token.totalSupply = erc20.totalSupply();
     let symbol = erc20.symbol();
     let name = erc20.name();
     token.name = name;
     token.symbol = symbol;
+    token.numberOfBuys = BIGINT_ZERO;
+    token.numberOfSells = BIGINT_ZERO;
   }
+  token.usdPrice = new BigDecimal(BIGINT_ZERO);
   token.save();
+
   return token;
 }

@@ -1,7 +1,8 @@
-import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigDecimal, BigInt, ethereum } from "@graphprotocol/graph-ts";
 import { RouterSwap } from "../../generated/schema";
 import {
   BIGINT_ONE,
+  BIGINT_TEN,
   BIGINT_THOUSAND,
   BIGINT_THREE,
   BIGINT_ZERO,
@@ -38,7 +39,7 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
   entity.tokenOut = event.params.tokenOut;
   entity.amountIn = event.params.amountIn;
   entity.amountOut = event.params.amountOut;
-  entity.usdValue = BIGINT_ZERO;
+  entity.usdValue = new BigDecimal(BIGINT_ZERO);
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -46,10 +47,11 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
 }
 
 export function updateTokenMetrics(event: RouterSwapEvent): void {
-  let token = getOrCreateToken(event);
-  token.numberOfSwaps = token.numberOfSwaps.plus(BIGINT_ONE);
-  token.totalTokensSwapped = token.totalTokensSwapped.plus(
-    event.params.amountIn
-  );
-  token.save();
+  let tokenSold = getOrCreateToken(event.params.tokenIn);
+  let tokenBought = getOrCreateToken(event.params.tokenOut);
+
+  tokenSold.numberOfSells = tokenSold.numberOfSells.plus(BIGINT_ONE);
+  tokenBought.numberOfBuys = tokenBought.numberOfBuys.plus(BIGINT_ONE);
+  tokenSold.save();
+  tokenBought.save();
 }
