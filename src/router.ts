@@ -1,4 +1,4 @@
-import { Bytes } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   Recovered as RecoveredEvent,
   RoleAdminChanged as RoleAdminChangedEvent,
@@ -20,7 +20,19 @@ import {
   UpdatedFeeClaimer,
   UpdatedMinFee,
   UpdatedTrustedTokens,
+  User,
 } from "../generated/schema";
+import {
+  updateSwapMetrics,
+  updateTokenMetrics,
+  updateUserMetrics,
+} from "./common/metricsHelpers";
+
+export function handleRouterSwap(event: RouterSwapEvent): void {
+  updateSwapMetrics(event);
+  updateUserMetrics(event);
+  updateTokenMetrics(event);
+}
 
 export function handleRecovered(event: RecoveredEvent): void {
   let entity = new Recovered(
@@ -73,22 +85,6 @@ export function handleRoleRevoked(event: RoleRevokedEvent): void {
   entity.role = event.params.role;
   entity.account = event.params.account;
   entity.sender = event.params.sender;
-
-  entity.blockNumber = event.block.number;
-  entity.blockTimestamp = event.block.timestamp;
-  entity.transactionHash = event.transaction.hash;
-
-  entity.save();
-}
-
-export function handleRouterSwap(event: RouterSwapEvent): void {
-  let entity = new RouterSwap(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  );
-  entity.tokenIn = event.params.tokenIn;
-  entity.tokenOut = event.params.tokenOut;
-  entity.amountIn = event.params.amountIn;
-  entity.amountOut = event.params.amountOut;
 
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;

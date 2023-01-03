@@ -423,6 +423,15 @@ export class RouterSwap extends Entity {
     this.set("amountOut", Value.fromBigInt(value));
   }
 
+  get usdValue(): BigInt {
+    let value = this.get("usdValue");
+    return value!.toBigInt();
+  }
+
+  set usdValue(value: BigInt) {
+    this.set("usdValue", Value.fromBigInt(value));
+  }
+
   get blockNumber(): BigInt {
     let value = this.get("blockNumber");
     return value!.toBigInt();
@@ -746,5 +755,141 @@ export class UpdatedTrustedTokens extends Entity {
 
   set transactionHash(value: Bytes) {
     this.set("transactionHash", Value.fromBytes(value));
+  }
+}
+
+export class User extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save User entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type User must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("User", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): User | null {
+    return changetype<User | null>(store.get("User", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    return value!.toBytes();
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get numberOfSwaps(): BigInt {
+    let value = this.get("numberOfSwaps");
+    return value!.toBigInt();
+  }
+
+  set numberOfSwaps(value: BigInt) {
+    this.set("numberOfSwaps", Value.fromBigInt(value));
+  }
+
+  get totalUSDSwapped(): BigInt {
+    let value = this.get("totalUSDSwapped");
+    return value!.toBigInt();
+  }
+
+  set totalUSDSwapped(value: BigInt) {
+    this.set("totalUSDSwapped", Value.fromBigInt(value));
+  }
+}
+
+export class Token extends Entity {
+  constructor(id: Bytes) {
+    super();
+    this.set("id", Value.fromBytes(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Token entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.BYTES,
+        `Entities of type Token must have an ID of type Bytes but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("Token", id.toBytes().toHexString(), this);
+    }
+  }
+
+  static load(id: Bytes): Token | null {
+    return changetype<Token | null>(store.get("Token", id.toHexString()));
+  }
+
+  get id(): Bytes {
+    let value = this.get("id");
+    return value!.toBytes();
+  }
+
+  set id(value: Bytes) {
+    this.set("id", Value.fromBytes(value));
+  }
+
+  get name(): string {
+    let value = this.get("name");
+    return value!.toString();
+  }
+
+  set name(value: string) {
+    this.set("name", Value.fromString(value));
+  }
+
+  get symbol(): string {
+    let value = this.get("symbol");
+    return value!.toString();
+  }
+
+  set symbol(value: string) {
+    this.set("symbol", Value.fromString(value));
+  }
+
+  get totalTokensSwapped(): BigInt {
+    let value = this.get("totalTokensSwapped");
+    return value!.toBigInt();
+  }
+
+  set totalTokensSwapped(value: BigInt) {
+    this.set("totalTokensSwapped", Value.fromBigInt(value));
+  }
+
+  get numberOfSwaps(): BigInt {
+    let value = this.get("numberOfSwaps");
+    return value!.toBigInt();
+  }
+
+  set numberOfSwaps(value: BigInt) {
+    this.set("numberOfSwaps", Value.fromBigInt(value));
+  }
+
+  get totalVolumeUSD(): BigInt {
+    let value = this.get("totalVolumeUSD");
+    return value!.toBigInt();
+  }
+
+  set totalVolumeUSD(value: BigInt) {
+    this.set("totalVolumeUSD", Value.fromBigInt(value));
+  }
+
+  get totalSupply(): BigInt {
+    let value = this.get("totalSupply");
+    return value!.toBigInt();
+  }
+
+  set totalSupply(value: BigInt) {
+    this.set("totalSupply", Value.fromBigInt(value));
   }
 }

@@ -43,6 +43,7 @@ type RouterSwap @entity(immutable: true) {
   tokenOut: Bytes! # address
   amountIn: BigInt! # uint256
   amountOut: BigInt! # uint256
+  usdValue: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -80,4 +81,20 @@ type UpdatedTrustedTokens @entity(immutable: true) {
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
+}
+
+type User @entity {
+  id: Bytes!
+  numberOfSwaps: BigInt!
+  totalUSDSwapped: BigInt!
+}
+
+type Token @entity {
+  id: Bytes!
+  name: String!
+  symbol: String!
+  totalTokensSwapped: BigInt!
+  numberOfSwaps: BigInt!
+  totalVolumeUSD: BigInt!
+  totalSupply: BigInt!
 }
