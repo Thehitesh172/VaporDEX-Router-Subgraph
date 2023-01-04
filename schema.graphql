@@ -6,6 +6,19 @@ type Recovered @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+type Token @entity {
+  id: Bytes!
+  name: String!
+  symbol: String!
+  decimals: Int!
+  usdPrice: BigDecimal!
+  totalTokensBought: BigInt!
+  totalTokensSold: BigInt!
+  numberOfBuys: BigInt!
+  numberOfSells: BigInt!
+  totalVolumeUSD: BigInt!
+  totalSupply: BigInt!
+}
 
 type RoleAdminChanged @entity(immutable: true) {
   id: Bytes!
@@ -32,18 +45,6 @@ type RoleRevoked @entity(immutable: true) {
   role: Bytes! # bytes32
   account: Bytes! # address
   sender: Bytes! # address
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type RouterSwap @entity(immutable: true) {
-  id: Bytes!
-  tokenIn: Bytes! # address
-  tokenOut: Bytes! # address
-  amountIn: BigInt! # uint256
-  amountOut: BigInt! # uint256
-  usdValue: BigDecimal!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -86,17 +87,26 @@ type UpdatedTrustedTokens @entity(immutable: true) {
 type User @entity {
   id: Bytes!
   numberOfSwaps: BigInt!
+  dailyID: String!
   totalUSDSwapped: BigInt!
 }
 
-type Token @entity {
+type RouterSwap @entity(immutable: true) {
   id: Bytes!
-  name: String!
-  symbol: String!
-  usdPrice: BigDecimal!
-  totalTokensSwapped: BigInt!
-  numberOfBuys: BigInt!
-  numberOfSells: BigInt!
-  totalVolumeUSD: BigInt!
-  totalSupply: BigInt!
+  tokenIn: Bytes! # address
+  tokenOut: Bytes! # address
+  amountIn: BigInt! # uint256
+  amountOut: BigInt! # uint256
+  usdValue: Int!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type DailyMetric @entity {
+  id: String! #Day number from contract deployment.. Id = 1 for Day 1, 2 for Day 2 and so on
+  numberOfTransactions: BigInt!
+  volumeUSD: BigInt!
+  dailyActiveUsers: BigInt!
+  timestamp: BigInt!
 }

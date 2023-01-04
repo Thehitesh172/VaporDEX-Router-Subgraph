@@ -25,11 +25,14 @@ dataSources:
         - UpdatedTrustedTokens
         - User
         - Token
+        - DailyMetric
       abis:
         - name: Router
           file: ./abis/Router.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: TraderJoeV2
+          file: ./abis/TraderJoeV2.json
       eventHandlers:
         - event: Recovered(indexed address,uint256)
           handler: handleRecovered

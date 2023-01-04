@@ -80,3 +80,9 @@ export const VAPORDEX_ROUTER_ADDRESS = Address.fromString(
 export const USDC_ADDRESS = Address.fromString(
   "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"
 );
+
+export const TJRouter_V2_ADDRESS = Address.fromString(
+  "0x60aE616a2155Ee3d9A68541Ba4544862310933d4"
+);
+
+export const DeployedBlockTimeStamp = 1664216963;

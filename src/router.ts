@@ -23,15 +23,17 @@ import {
   User,
 } from "../generated/schema";
 import {
+  updateDailyMetrics,
   updateSwapMetrics,
   updateTokenMetrics,
   updateUserMetrics,
 } from "./common/metricsHelpers";
 
 export function handleRouterSwap(event: RouterSwapEvent): void {
-  updateSwapMetrics(event);
   updateUserMetrics(event);
   updateTokenMetrics(event);
+  updateSwapMetrics(event);
+  updateDailyMetrics(event);
 }
 
 export function handleRecovered(event: RecoveredEvent): void {
