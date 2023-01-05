@@ -86,3 +86,21 @@ export const TJRouter_V2_ADDRESS = Address.fromString(
 );
 
 export const DeployedBlockTimeStamp = 1664216963;
+
+export const AVAX_USDC_PAIR = Address.fromString(
+  "0xf4003F4efBE8691B60249E6afbD307aBE7758adb"
+);
+
+export const VPND_AVAX_PAIR = Address.fromString(
+  "0x4cd20F3e2894Ed1A0F4668d953a98E689c647bfE"
+);
+
+export const AVAX_DECIMALS = 18;
+
+export const VPND_ADDRESS = Address.fromString(
+  "0x83a283641C6B4DF383BCDDf807193284C84c5342"
+);
+
+export const WAVAX_ADDRESS = Address.fromString(
+  "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
+);

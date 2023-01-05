@@ -7,6 +7,7 @@ import {
 } from "@graphprotocol/graph-ts";
 import { RouterSwap, Token, User } from "../../generated/schema";
 import {
+  AVAX_DECIMALS,
   BIGINT_ONE,
   BIGINT_TEN,
   BIGINT_THOUSAND,
@@ -14,13 +15,19 @@ import {
   BIGINT_ZERO,
   DeployedBlockTimeStamp,
   USDC_ADDRESS,
+  USDC_DECIMALS,
   VAPORDEX_ROUTER_ADDRESS,
+  VPND_ADDRESS,
+  WAVAX_ADDRESS,
 } from "./constants";
 import {
+  formatAmount,
+  getAVAXPriceInUSD,
   getDailyID,
   getOrCreateDailyMetrics,
   getOrCreateToken,
   getOrCreateUser,
+  getVPNDPriceInUSD,
 } from "./getters";
 import {
   Recovered as RecoveredEvent,
@@ -34,7 +41,7 @@ import {
   UpdatedMinFee as UpdatedMinFeeEvent,
   UpdatedTrustedTokens as UpdatedTrustedTokensEvent,
 } from "../../generated/Router/Router";
-import { getUsdPrice } from "./price";
+import { getUsdPrice } from "./getters";
 
 export function updateUserMetrics(event: RouterSwapEvent): void {
   let user = getOrCreateUser(event);
@@ -58,7 +65,25 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
   entity.tokenOut = event.params.tokenOut;
   entity.amountIn = event.params.amountIn;
   entity.amountOut = event.params.amountOut;
-  entity.usdValue = 0;
+  let avaxPrice = getAVAXPriceInUSD();
+  let vpndPrice = getVPNDPriceInUSD();
+
+  if (event.params.tokenIn.equals(WAVAX_ADDRESS)) {
+    entity.usdValue = formatAmount(
+      event.params.amountIn.toBigDecimal(),
+      AVAX_DECIMALS
+    ).times(avaxPrice);
+  } else if (event.params.tokenIn.equals(VPND_ADDRESS)) {
+    entity.usdValue = vpndPrice.times(
+      formatAmount(event.params.amountIn.toBigDecimal(), AVAX_DECIMALS)
+    );
+  } else if (event.params.tokenIn.equals(USDC_ADDRESS)) {
+    entity.usdValue = BIGINT_ONE.toBigDecimal().times(
+      formatAmount(event.params.amountIn.toBigDecimal(), USDC_DECIMALS)
+    );
+  } else {
+    entity.usdValue = BIGINT_ZERO.toBigDecimal();
+  }
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -81,6 +106,10 @@ export function updateTokenMetrics(event: RouterSwapEvent): void {
     event.params.amountOut
   );
 
+  tokenBought.currentPriceInUSD = getUsdPrice(
+    Address.fromBytes(tokenBought.id)
+  );
+  tokenSold.currentPriceInUSD = getUsdPrice(Address.fromBytes(tokenSold.id));
   tokenSold.save();
   tokenBought.save();
 }

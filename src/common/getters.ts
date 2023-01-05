@@ -11,8 +11,11 @@ import {
 } from "../../generated/Router/Router";
 import { DailyMetric, Token, User } from "../../generated/schema";
 import {
+  AVAX_DECIMALS,
+  AVAX_USDC_PAIR,
   BIGINT_HUNDRED,
   BIGINT_ONE,
+  BIGINT_TEN,
   BIGINT_THOUSAND,
   BIGINT_THREE,
   BIGINT_ZERO,
@@ -20,9 +23,14 @@ import {
   DeployedBlockTimeStamp,
   SECONDS_PER_DAY,
   USDC_ADDRESS,
+  USDC_DECIMALS,
   VAPORDEX_ROUTER_ADDRESS,
+  VPND_ADDRESS,
+  VPND_AVAX_PAIR,
+  WAVAX_ADDRESS,
 } from "./constants";
 import { ERC20 } from "../../generated/Router/ERC20";
+import { Pair } from "../../generated/Router/Pair";
 
 export function getOrCreateUser(event: RouterSwapEvent): User {
   let user = User.load(event.transaction.from);
@@ -64,7 +72,7 @@ export function getOrCreateToken(address: Address): Token {
     token.totalTokensBought = BIGINT_ZERO;
     token.totalTokensSold = BIGINT_ZERO;
   }
-  token.usdPrice = new BigDecimal(BIGINT_ZERO);
+  token.currentPriceInUSD = new BigDecimal(BIGINT_ZERO);
   token.save();
 
   return token;
@@ -96,4 +104,42 @@ export function getDailyID(event: RouterSwapEvent): number {
     (event.block.timestamp.toI32() - DeployedBlockTimeStamp) / SECONDS_PER_DAY;
 
   return dailyID;
+}
+
+export function getUsdPrice(token: Address): BigDecimal {
+  if (token.equals(VPND_ADDRESS)) {
+    return getVPNDPriceInUSD();
+  } else if (token.equals(WAVAX_ADDRESS)) {
+    return getAVAXPriceInUSD();
+  } else {
+    return BIGINT_ZERO.toBigDecimal();
+  }
+}
+
+export function getAVAXPriceInUSD(): BigDecimal {
+  let pair = Pair.bind(AVAX_USDC_PAIR);
+  let reserves = pair.getReserves();
+  let reserve0 = reserves.getReserve0();
+  let reserve1 = reserves.getReserve1();
+
+  let avaxPrice = formatAmount(reserve1.toBigDecimal(), USDC_DECIMALS).div(
+    formatAmount(reserve0.toBigDecimal(), AVAX_DECIMALS)
+  );
+  return avaxPrice;
+}
+
+export function getVPNDPriceInUSD(): BigDecimal {
+  let pair = Pair.bind(VPND_AVAX_PAIR);
+  let reserves = pair.getReserves();
+  let reserve0 = reserves.getReserve0().toBigDecimal();
+  let reserve1 = reserves.getReserve1().toBigDecimal();
+
+  let vpndPriceInAVAX = reserve1.div(reserve0);
+
+  let vpndPriceInUSD = getAVAXPriceInUSD().times(vpndPriceInAVAX);
+  return vpndPriceInUSD;
+}
+
+export function formatAmount(amount: BigDecimal, decimals: i32): BigDecimal {
+  return amount.div(BIGINT_TEN.pow(decimals as u8).toBigDecimal());
 }
