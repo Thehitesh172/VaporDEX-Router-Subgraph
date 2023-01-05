@@ -5,7 +5,12 @@ import {
   ethereum,
   log,
 } from "@graphprotocol/graph-ts";
-import { RouterSwap, Token, User } from "../../generated/schema";
+import {
+  CumulativeMetric,
+  RouterSwap,
+  Token,
+  User,
+} from "../../generated/schema";
 import {
   AVAX_DECIMALS,
   BIGINT_ONE,
@@ -65,25 +70,45 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
   entity.tokenOut = event.params.tokenOut;
   entity.amountIn = event.params.amountIn;
   entity.amountOut = event.params.amountOut;
+
+  let usdValue = BIGINT_ZERO.toBigDecimal();
   let avaxPrice = getAVAXPriceInUSD();
   let vpndPrice = getVPNDPriceInUSD();
 
   if (event.params.tokenIn.equals(WAVAX_ADDRESS)) {
-    entity.usdValue = formatAmount(
+    usdValue = formatAmount(
       event.params.amountIn.toBigDecimal(),
       AVAX_DECIMALS
     ).times(avaxPrice);
   } else if (event.params.tokenIn.equals(VPND_ADDRESS)) {
-    entity.usdValue = vpndPrice.times(
+    usdValue = vpndPrice.times(
       formatAmount(event.params.amountIn.toBigDecimal(), AVAX_DECIMALS)
     );
   } else if (event.params.tokenIn.equals(USDC_ADDRESS)) {
-    entity.usdValue = BIGINT_ONE.toBigDecimal().times(
+    usdValue = BIGINT_ONE.toBigDecimal().times(
       formatAmount(event.params.amountIn.toBigDecimal(), USDC_DECIMALS)
     );
   } else {
-    entity.usdValue = BIGINT_ZERO.toBigDecimal();
+    usdValue = BIGINT_ZERO.toBigDecimal();
   }
+
+  entity.usdValue = usdValue;
+  let cumulativeMetrics = CumulativeMetric.load("TOTAL");
+  if (cumulativeMetrics === null) {
+    cumulativeMetrics = new CumulativeMetric("TOTAL");
+    cumulativeMetrics.uniqueUsers = BIGINT_ZERO;
+    cumulativeMetrics.numberOfSwaps = BIGINT_ZERO;
+    cumulativeMetrics.totalVolumeUSD = BIGINT_ZERO.toBigDecimal();
+    cumulativeMetrics.save();
+  }
+  cumulativeMetrics.numberOfSwaps = cumulativeMetrics.numberOfSwaps.plus(
+    BIGINT_ONE
+  );
+  cumulativeMetrics.totalVolumeUSD = cumulativeMetrics.totalVolumeUSD.plus(
+    usdValue
+  );
+  cumulativeMetrics.save();
+  entity.usdValue = BIGINT_ZERO.toBigDecimal();
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;

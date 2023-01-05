@@ -9,7 +9,12 @@ import {
   Router,
   RouterSwap as RouterSwapEvent,
 } from "../../generated/Router/Router";
-import { DailyMetric, Token, User } from "../../generated/schema";
+import {
+  CumulativeMetric,
+  DailyMetric,
+  Token,
+  User,
+} from "../../generated/schema";
 import {
   AVAX_DECIMALS,
   AVAX_USDC_PAIR,
@@ -35,6 +40,18 @@ import { Pair } from "../../generated/Router/Pair";
 export function getOrCreateUser(event: RouterSwapEvent): User {
   let user = User.load(event.transaction.from);
   if (user === null) {
+    let cumulativeMetrics = CumulativeMetric.load("TOTAL");
+    if (cumulativeMetrics === null) {
+      cumulativeMetrics = new CumulativeMetric("TOTAL");
+      cumulativeMetrics.uniqueUsers = BIGINT_ZERO;
+      cumulativeMetrics.numberOfSwaps = BIGINT_ZERO;
+      cumulativeMetrics.totalVolumeUSD = BIGINT_ZERO.toBigDecimal();
+      cumulativeMetrics.save();
+    }
+    cumulativeMetrics.uniqueUsers = cumulativeMetrics.uniqueUsers.plus(
+      BIGINT_ONE
+    );
+    cumulativeMetrics.save();
     user = new User(event.transaction.from);
     user.numberOfSwaps = BIGINT_ZERO;
     user.totalUSDSwapped = BIGINT_ZERO;
@@ -103,7 +120,7 @@ export function getDailyID(event: RouterSwapEvent): number {
   let dailyID =
     (event.block.timestamp.toI32() - DeployedBlockTimeStamp) / SECONDS_PER_DAY;
 
-  return dailyID;
+  return dailyID + 1;
 }
 
 export function getUsdPrice(token: Address): BigDecimal {

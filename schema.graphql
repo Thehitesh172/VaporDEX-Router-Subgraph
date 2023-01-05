@@ -90,7 +90,6 @@ type User @entity {
   dailyID: String!
   totalUSDSwapped: BigInt!
 }
-
 type RouterSwap @entity(immutable: true) {
   id: Bytes!
   tokenIn: Bytes! # address
@@ -109,4 +108,11 @@ type DailyMetric @entity {
   volumeUSD: BigInt!
   dailyActiveUsers: BigInt!
   timestamp: BigInt!
+}
+
+type CumulativeMetric @entity {
+  id: String!
+  numberOfSwaps: BigInt!
+  totalVolumeUSD: BigDecimal!
+  uniqueUsers: BigInt!
 }
