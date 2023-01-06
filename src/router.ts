@@ -22,7 +22,8 @@ import {
   UpdatedTrustedTokens,
   User,
 } from "../generated/schema";
-import { getOrCreateToken, getUsdPrice } from "./common/getters";
+import { WAVAX_ADDRESS } from "./common/constants";
+import { formatAmount, getOrCreateToken, getUsdPrice } from "./common/getters";
 import {
   updateDailyMetrics,
   updateMonthlyMetrics,
@@ -36,9 +37,15 @@ export function handleRouterSwap(event: RouterSwapEvent): void {
   // NOTE: tokenIn = sold token
   let tokenSold = getOrCreateToken(event.params.tokenIn);
   let tokenBought = getOrCreateToken(event.params.tokenOut);
-  let tokenBoughtUSD = getUsdPrice(Address.fromBytes(tokenBought.id));
-  let tokenSoldUSD = getUsdPrice(Address.fromBytes(tokenSold.id));
-  updateUserMetrics(event);
+  let tokenBoughtUSD = getUsdPrice(tokenBought);
+  let amountInINtokenBought = formatAmount(
+    event.params.amountOut.toBigDecimal(),
+    tokenBought.decimals
+  ).div(formatAmount(event.params.amountIn.toBigDecimal(), tokenSold.decimals));
+
+  // let tokenSoldUSD = getUsdPrice(tokenSold);
+  let tokenSoldUSD = amountInINtokenBought.times(tokenBoughtUSD);
+  updateUserMetrics(event, tokenBoughtUSD);
   updateTokenMetrics(
     event,
     tokenSold,
@@ -46,10 +53,14 @@ export function handleRouterSwap(event: RouterSwapEvent): void {
     tokenBoughtUSD,
     tokenSoldUSD
   );
+  let usdValue = formatAmount(
+    event.params.amountOut.toBigDecimal(),
+    tokenBought.decimals
+  ).times(tokenBoughtUSD);
   updateSwapMetrics(event, tokenSold, tokenSold, tokenBoughtUSD, tokenSoldUSD);
-  updateDailyMetrics(event);
-  updateMonthlyMetrics(event);
-  updateWeeklyMetrics(event);
+  updateDailyMetrics(event, usdValue);
+  updateMonthlyMetrics(event, usdValue);
+  updateWeeklyMetrics(event, usdValue);
 }
 
 export function handleRecovered(event: RecoveredEvent): void {

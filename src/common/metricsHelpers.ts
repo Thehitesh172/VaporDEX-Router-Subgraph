@@ -55,10 +55,13 @@ import {
 } from "../../generated/Router/Router";
 import { getUsdPrice } from "./getters";
 
-export function updateUserMetrics(event: RouterSwapEvent): void {
+export function updateUserMetrics(
+  event: RouterSwapEvent,
+  tokenBoughtUSD: BigDecimal
+): void {
   let user = getOrCreateUser(event);
   user.numberOfSwaps = user.numberOfSwaps.plus(BIGINT_ONE);
-  user.totalUSDSwapped = BIGINT_ZERO;
+  user.totalUSDSwapped = user.totalUSDSwapped.plus(tokenBoughtUSD);
   user.save();
 }
 
@@ -97,7 +100,6 @@ export function updateSwapMetrics(
     formattedUSdValue
   );
   cumulativeMetrics.save();
-  entity.usdValue = BIGINT_ZERO.toBigDecimal();
   entity.blockNumber = event.block.number;
   entity.blockTimestamp = event.block.timestamp;
   entity.transactionHash = event.transaction.hash;
@@ -122,13 +124,29 @@ export function updateTokenMetrics(
     event.params.amountOut
   );
 
+  tokenBought.totalVolumeUSD = tokenBought.totalVolumeUSD.plus(
+    formatAmount(
+      event.params.amountOut.toBigDecimal(),
+      tokenBought.decimals
+    ).times(tokenBoughtUSD)
+  );
+
+  tokenSold.totalVolumeUSD = tokenSold.totalVolumeUSD.plus(
+    formatAmount(
+      event.params.amountIn.toBigDecimal(),
+      tokenSold.decimals
+    ).times(tokenSoldUSD)
+  );
   tokenBought.currentPriceInUSD = tokenBoughtUSD;
   tokenSold.currentPriceInUSD = tokenSoldUSD;
   tokenSold.save();
   tokenBought.save();
 }
 
-export function updateDailyMetrics(event: RouterSwapEvent): void {
+export function updateDailyMetrics(
+  event: RouterSwapEvent,
+  usdValue: BigDecimal
+): void {
   let dailyMetrics = getOrCreateDailyMetrics(event);
   let userDayID = getDailyID(event)
     .toString()
@@ -143,13 +161,17 @@ export function updateDailyMetrics(event: RouterSwapEvent): void {
     );
     dailyUser.save();
   }
+  dailyMetrics.volumeUSD = dailyMetrics.volumeUSD.plus(usdValue);
   dailyMetrics.numberOfTransactions = dailyMetrics.numberOfTransactions.plus(
     BIGINT_ONE
   );
   dailyMetrics.save();
 }
 
-export function updateWeeklyMetrics(event: RouterSwapEvent): void {
+export function updateWeeklyMetrics(
+  event: RouterSwapEvent,
+  usdValue: BigDecimal
+): void {
   let weeklyMetrics = getOrCreateWeeklyMetrics(event);
   let userWeekID = getWeekID(event)
     .toString()
@@ -167,10 +189,14 @@ export function updateWeeklyMetrics(event: RouterSwapEvent): void {
   weeklyMetrics.numberOfTransactions = weeklyMetrics.numberOfTransactions.plus(
     BIGINT_ONE
   );
+  weeklyMetrics.volumeUSD = weeklyMetrics.volumeUSD.plus(usdValue);
   weeklyMetrics.save();
 }
 
-export function updateMonthlyMetrics(event: RouterSwapEvent): void {
+export function updateMonthlyMetrics(
+  event: RouterSwapEvent,
+  usdValue: BigDecimal
+): void {
   let monthlyMetrics = getOrCreateMonthlyMetrics(event);
   let userMonthID = getMonthID(event)
     .toString()
@@ -189,5 +215,6 @@ export function updateMonthlyMetrics(event: RouterSwapEvent): void {
   monthlyMetrics.numberOfTransactions = monthlyMetrics.numberOfTransactions.plus(
     BIGINT_ONE
   );
+  monthlyMetrics.volumeUSD = monthlyMetrics.volumeUSD.plus(usdValue);
   monthlyMetrics.save();
 }

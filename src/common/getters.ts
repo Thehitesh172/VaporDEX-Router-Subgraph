@@ -4,6 +4,7 @@ import {
   BigInt,
   Bytes,
   ethereum,
+  log,
 } from "@graphprotocol/graph-ts";
 import {
   Router,
@@ -21,6 +22,7 @@ import {
   AVAX_DECIMALS,
   AVAX_USDC_PAIR,
   BIGDECIMAL_ONE,
+  BIGDECIMAL_ZERO,
   BIGINT_HUNDRED,
   BIGINT_ONE,
   BIGINT_TEN,
@@ -59,7 +61,7 @@ export function getOrCreateUser(event: RouterSwapEvent): User {
     cumulativeMetrics.save();
     user = new User(event.transaction.from);
     user.numberOfSwaps = BIGINT_ZERO;
-    user.totalUSDSwapped = BIGINT_ZERO;
+    user.totalUSDSwapped = BIGDECIMAL_ZERO;
     user.save();
   }
 
@@ -72,7 +74,7 @@ export function getOrCreateToken(address: Address): Token {
   if (token === null) {
     token = new Token(address);
     token.id = address;
-    token.totalVolumeUSD = BIGINT_ZERO;
+    token.totalVolumeUSD = BIGDECIMAL_ZERO;
 
     let erc20 = ERC20.bind(address);
     token.totalSupply = erc20.totalSupply();
@@ -107,7 +109,7 @@ export function getOrCreateDailyMetrics(event: RouterSwapEvent): DailyMetric {
     dailyMetrics.id = numDaysPassedAfterContractDeploment.toString();
     dailyMetrics.numberOfTransactions = BIGINT_ZERO;
     dailyMetrics.dailyActiveUsers = BIGINT_ZERO;
-    dailyMetrics.volumeUSD = BIGINT_ZERO;
+    dailyMetrics.volumeUSD = BIGDECIMAL_ZERO;
     dailyMetrics.timestamp = event.block.timestamp;
     dailyMetrics.save();
   }
@@ -121,15 +123,19 @@ export function getDailyID(event: RouterSwapEvent): number {
   return dailyID + 1;
 }
 
-export function getUsdPrice(token: Address): BigDecimal {
-  if (token.equals(VPND_ADDRESS)) {
+export function getUsdPrice(token: Token): BigDecimal {
+  if (token.id.toHexString() === VPND_ADDRESS.toHexString()) {
     return getVPNDPriceInUSD();
-  } else if (token.equals(WAVAX_ADDRESS)) {
+  } else if (token.id.toHexString() === WAVAX_ADDRESS.toHexString()) {
     return getAVAXPriceInUSD();
-  } else if (STABLES_TOKENS.includes(token)) {
+  } else if (
+    STABLES_TOKENS.map<string>((token) => token.toHexString()).includes(
+      token.id.toHexString()
+    )
+  ) {
     return BIGDECIMAL_ONE;
   } else {
-    return BIGINT_ZERO.toBigDecimal();
+    return getUSDPriceFromRouter(token);
   }
 }
 
@@ -168,7 +174,7 @@ export function getOrCreateWeeklyMetrics(event: RouterSwapEvent): WeeklyMetric {
     weeklyMetrics = new WeeklyMetric(weekID);
     weeklyMetrics.numberOfTransactions = BIGINT_ZERO;
     weeklyMetrics.weeklyActiveUsers = BIGINT_ZERO;
-    weeklyMetrics.volumeUSD = BIGINT_ZERO;
+    weeklyMetrics.volumeUSD = BIGDECIMAL_ZERO;
     weeklyMetrics.timestamp = event.block.timestamp;
     weeklyMetrics.save();
   }
@@ -199,9 +205,38 @@ export function getOrCreateMonthlyMetrics(
     monthlyMetrics = new MonthlyMetric(monthID);
     monthlyMetrics.numberOfTransactions = BIGINT_ZERO;
     monthlyMetrics.monthlyActiveUsers = BIGINT_ZERO;
-    monthlyMetrics.volumeUSD = BIGINT_ZERO;
+    monthlyMetrics.volumeUSD = BIGDECIMAL_ZERO;
     monthlyMetrics.timestamp = event.block.timestamp;
     monthlyMetrics.save();
   }
   return monthlyMetrics;
+}
+
+export function getUSDPriceFromRouter(token: Token): BigDecimal {
+  let router = Router.bind(VAPORDEX_ROUTER_ADDRESS);
+  let amountIn = parseAmount(BIGINT_THOUSAND, token.decimals);
+  let result = router.try_findBestPath(
+    amountIn,
+    Address.fromBytes(token.id),
+    USDC_ADDRESS,
+    BIGINT_THREE
+  );
+
+  if (result.reverted) {
+    return BIGDECIMAL_ZERO;
+  }
+
+  let price = result.value.amounts[result.value.amounts.length - 1]
+    .toBigDecimal()
+    .div(BIGINT_THOUSAND.toBigDecimal());
+  log.info(
+    "Price",
+    result.value.amounts.map<string>((amount) => amount.toString())
+  );
+  return formatAmount(price, USDC_DECIMALS);
+}
+
+export function parseAmount(amount: BigInt, decimals: number): BigInt {
+  let am = amount.times(BIGINT_TEN.pow(decimals as u8));
+  return am;
 }
