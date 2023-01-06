@@ -12,12 +12,15 @@ import {
 import {
   CumulativeMetric,
   DailyMetric,
+  MonthlyMetric,
   Token,
   User,
+  WeeklyMetric,
 } from "../../generated/schema";
 import {
   AVAX_DECIMALS,
   AVAX_USDC_PAIR,
+  BIGDECIMAL_ONE,
   BIGINT_HUNDRED,
   BIGINT_ONE,
   BIGINT_TEN,
@@ -27,6 +30,8 @@ import {
   DEFAULT_DECIMALS,
   DeployedBlockTimeStamp,
   SECONDS_PER_DAY,
+  SECONDS_PER_WEEK,
+  STABLES_TOKENS,
   USDC_ADDRESS,
   USDC_DECIMALS,
   VAPORDEX_ROUTER_ADDRESS,
@@ -55,13 +60,6 @@ export function getOrCreateUser(event: RouterSwapEvent): User {
     user = new User(event.transaction.from);
     user.numberOfSwaps = BIGINT_ZERO;
     user.totalUSDSwapped = BIGINT_ZERO;
-
-    let dailyID = getDailyID(event);
-
-    user.dailyID = event.transaction.from
-      .toHexString()
-      .concat("-")
-      .concat(dailyID.toString());
     user.save();
   }
 
@@ -128,6 +126,8 @@ export function getUsdPrice(token: Address): BigDecimal {
     return getVPNDPriceInUSD();
   } else if (token.equals(WAVAX_ADDRESS)) {
     return getAVAXPriceInUSD();
+  } else if (STABLES_TOKENS.includes(token)) {
+    return BIGDECIMAL_ONE;
   } else {
     return BIGINT_ZERO.toBigDecimal();
   }
@@ -159,4 +159,49 @@ export function getVPNDPriceInUSD(): BigDecimal {
 
 export function formatAmount(amount: BigDecimal, decimals: i32): BigDecimal {
   return amount.div(BIGINT_TEN.pow(decimals as u8).toBigDecimal());
+}
+
+export function getOrCreateWeeklyMetrics(event: RouterSwapEvent): WeeklyMetric {
+  let weekID = getWeekID(event).toString();
+  let weeklyMetrics = WeeklyMetric.load(weekID);
+  if (weeklyMetrics === null) {
+    weeklyMetrics = new WeeklyMetric(weekID);
+    weeklyMetrics.numberOfTransactions = BIGINT_ZERO;
+    weeklyMetrics.weeklyActiveUsers = BIGINT_ZERO;
+    weeklyMetrics.volumeUSD = BIGINT_ZERO;
+    weeklyMetrics.timestamp = event.block.timestamp;
+    weeklyMetrics.save();
+  }
+  return weeklyMetrics;
+}
+
+export function getWeekID(event: RouterSwapEvent): number {
+  let weekID =
+    (event.block.timestamp.toI32() - DeployedBlockTimeStamp) / SECONDS_PER_WEEK;
+
+  return weekID + 1;
+}
+
+export function getMonthID(event: RouterSwapEvent): number {
+  let monthID =
+    ((event.block.timestamp.toI32() - DeployedBlockTimeStamp) * 12) /
+    (365 * SECONDS_PER_DAY);
+
+  return monthID + 1;
+}
+
+export function getOrCreateMonthlyMetrics(
+  event: RouterSwapEvent
+): MonthlyMetric {
+  let monthID = getMonthID(event).toString();
+  let monthlyMetrics = MonthlyMetric.load(monthID);
+  if (monthlyMetrics === null) {
+    monthlyMetrics = new MonthlyMetric(monthID);
+    monthlyMetrics.numberOfTransactions = BIGINT_ZERO;
+    monthlyMetrics.monthlyActiveUsers = BIGINT_ZERO;
+    monthlyMetrics.volumeUSD = BIGINT_ZERO;
+    monthlyMetrics.timestamp = event.block.timestamp;
+    monthlyMetrics.save();
+  }
+  return monthlyMetrics;
 }

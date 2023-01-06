@@ -41,6 +41,7 @@ export const BIGDECIMAL_FIFTY_PERCENT = new BigDecimal(BIGINT_FIFTY);
 export const MAX_UINT = BigInt.fromI32(2).times(BigInt.fromI32(255));
 export const DAYS_PER_YEAR = new BigDecimal(BigInt.fromI32(365));
 export const SECONDS_PER_DAY = 60 * 60 * 24;
+export const SECONDS_PER_WEEK = 60 * 60 * 24 * 7;
 export const SECONDS_PER_HOUR = 60 * 60;
 export const MS_PER_DAY = new BigDecimal(BigInt.fromI32(24 * 60 * 60 * 1000));
 export const ONE_WEEK_IN_DAYS = BigInt.fromI32(7);
@@ -104,3 +105,18 @@ export const VPND_ADDRESS = Address.fromString(
 export const WAVAX_ADDRESS = Address.fromString(
   "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
 );
+export const USDCE_ADDRESS = Address.fromString(
+  "0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664"
+);
+export const USDT_ADDRESS = Address.fromString(
+  "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7"
+);
+export const USDTE_ADDRESS = Address.fromString(
+  "0xc7198437980c041c805A1EDcbA50c1Ce5db95118"
+);
+export const STABLES_TOKENS = [
+  USDC_ADDRESS,
+  USDT_ADDRESS,
+  USDTE_ADDRESS,
+  USDCE_ADDRESS,
+];

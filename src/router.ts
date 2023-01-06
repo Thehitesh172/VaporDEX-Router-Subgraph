@@ -1,4 +1,4 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   Recovered as RecoveredEvent,
   RoleAdminChanged as RoleAdminChangedEvent,
@@ -22,18 +22,34 @@ import {
   UpdatedTrustedTokens,
   User,
 } from "../generated/schema";
+import { getOrCreateToken, getUsdPrice } from "./common/getters";
 import {
   updateDailyMetrics,
+  updateMonthlyMetrics,
   updateSwapMetrics,
   updateTokenMetrics,
   updateUserMetrics,
+  updateWeeklyMetrics,
 } from "./common/metricsHelpers";
 
 export function handleRouterSwap(event: RouterSwapEvent): void {
+  // NOTE: tokenIn = sold token
+  let tokenSold = getOrCreateToken(event.params.tokenIn);
+  let tokenBought = getOrCreateToken(event.params.tokenOut);
+  let tokenBoughtUSD = getUsdPrice(Address.fromBytes(tokenBought.id));
+  let tokenSoldUSD = getUsdPrice(Address.fromBytes(tokenSold.id));
   updateUserMetrics(event);
-  updateTokenMetrics(event);
-  updateSwapMetrics(event);
+  updateTokenMetrics(
+    event,
+    tokenSold,
+    tokenBought,
+    tokenBoughtUSD,
+    tokenSoldUSD
+  );
+  updateSwapMetrics(event, tokenSold, tokenSold, tokenBoughtUSD, tokenSoldUSD);
   updateDailyMetrics(event);
+  updateMonthlyMetrics(event);
+  updateWeeklyMetrics(event);
 }
 
 export function handleRecovered(event: RecoveredEvent): void {

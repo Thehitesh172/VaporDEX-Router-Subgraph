@@ -27,6 +27,11 @@ dataSources:
         - Token
         - DailyMetric
         - CumulativeMetric
+        - WeeklyMetric
+        - MonthlyMetric
+        - MonthlyUser
+        - WeeklyUser
+        - WeeklyUser
       abis:
         - name: Router
           file: ./abis/Router.json

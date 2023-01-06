@@ -7,9 +7,12 @@ import {
 } from "@graphprotocol/graph-ts";
 import {
   CumulativeMetric,
+  DailyUser,
+  MonthlyUser,
   RouterSwap,
   Token,
   User,
+  WeeklyUser,
 } from "../../generated/schema";
 import {
   AVAX_DECIMALS,
@@ -29,10 +32,14 @@ import {
   formatAmount,
   getAVAXPriceInUSD,
   getDailyID,
+  getMonthID,
   getOrCreateDailyMetrics,
+  getOrCreateMonthlyMetrics,
   getOrCreateToken,
   getOrCreateUser,
+  getOrCreateWeeklyMetrics,
   getVPNDPriceInUSD,
+  getWeekID,
 } from "./getters";
 import {
   Recovered as RecoveredEvent,
@@ -52,16 +59,16 @@ export function updateUserMetrics(event: RouterSwapEvent): void {
   let user = getOrCreateUser(event);
   user.numberOfSwaps = user.numberOfSwaps.plus(BIGINT_ONE);
   user.totalUSDSwapped = BIGINT_ZERO;
-  let dailyID = getDailyID(event);
-
-  user.dailyID = user.id
-    .toHexString()
-    .concat("-")
-    .concat(dailyID.toString());
   user.save();
 }
 
-export function updateSwapMetrics(event: RouterSwapEvent): void {
+export function updateSwapMetrics(
+  event: RouterSwapEvent,
+  tokenSold: Token,
+  tokenBought: Token,
+  tokenBoughtUSD: BigDecimal,
+  tokenSoldUSD: BigDecimal
+): void {
   let entity = new RouterSwap(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
@@ -70,29 +77,11 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
   entity.tokenOut = event.params.tokenOut;
   entity.amountIn = event.params.amountIn;
   entity.amountOut = event.params.amountOut;
+  let formattedUSdValue = tokenSoldUSD.times(
+    formatAmount(event.params.amountIn.toBigDecimal(), tokenSold.decimals)
+  );
+  entity.usdValue = formattedUSdValue;
 
-  let usdValue = BIGINT_ZERO.toBigDecimal();
-  let avaxPrice = getAVAXPriceInUSD();
-  let vpndPrice = getVPNDPriceInUSD();
-
-  if (event.params.tokenIn.equals(WAVAX_ADDRESS)) {
-    usdValue = formatAmount(
-      event.params.amountIn.toBigDecimal(),
-      AVAX_DECIMALS
-    ).times(avaxPrice);
-  } else if (event.params.tokenIn.equals(VPND_ADDRESS)) {
-    usdValue = vpndPrice.times(
-      formatAmount(event.params.amountIn.toBigDecimal(), AVAX_DECIMALS)
-    );
-  } else if (event.params.tokenIn.equals(USDC_ADDRESS)) {
-    usdValue = BIGINT_ONE.toBigDecimal().times(
-      formatAmount(event.params.amountIn.toBigDecimal(), USDC_DECIMALS)
-    );
-  } else {
-    usdValue = BIGINT_ZERO.toBigDecimal();
-  }
-
-  entity.usdValue = usdValue;
   let cumulativeMetrics = CumulativeMetric.load("TOTAL");
   if (cumulativeMetrics === null) {
     cumulativeMetrics = new CumulativeMetric("TOTAL");
@@ -105,7 +94,7 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
     BIGINT_ONE
   );
   cumulativeMetrics.totalVolumeUSD = cumulativeMetrics.totalVolumeUSD.plus(
-    usdValue
+    formattedUSdValue
   );
   cumulativeMetrics.save();
   entity.usdValue = BIGINT_ZERO.toBigDecimal();
@@ -116,11 +105,13 @@ export function updateSwapMetrics(event: RouterSwapEvent): void {
   entity.save();
 }
 
-export function updateTokenMetrics(event: RouterSwapEvent): void {
-  // NOTE: tokenIn = sold token
-  let tokenSold = getOrCreateToken(event.params.tokenIn);
-  let tokenBought = getOrCreateToken(event.params.tokenOut);
-
+export function updateTokenMetrics(
+  event: RouterSwapEvent,
+  tokenSold: Token,
+  tokenBought: Token,
+  tokenBoughtUSD: BigDecimal,
+  tokenSoldUSD: BigDecimal
+): void {
   tokenSold.numberOfSells = tokenSold.numberOfSells.plus(BIGINT_ONE);
   tokenSold.totalTokensSold = tokenSold.totalTokensSold.plus(
     event.params.amountIn
@@ -131,25 +122,72 @@ export function updateTokenMetrics(event: RouterSwapEvent): void {
     event.params.amountOut
   );
 
-  tokenBought.currentPriceInUSD = getUsdPrice(
-    Address.fromBytes(tokenBought.id)
-  );
-  tokenSold.currentPriceInUSD = getUsdPrice(Address.fromBytes(tokenSold.id));
+  tokenBought.currentPriceInUSD = tokenBoughtUSD;
+  tokenSold.currentPriceInUSD = tokenSoldUSD;
   tokenSold.save();
   tokenBought.save();
 }
 
 export function updateDailyMetrics(event: RouterSwapEvent): void {
   let dailyMetrics = getOrCreateDailyMetrics(event);
-  let user = User.load(event.transaction.from);
+  let userDayID = getDailyID(event)
+    .toString()
+    .concat(event.transaction.from.toHexString());
 
-  if (user !== null) {
+  let dailyUser = DailyUser.load(userDayID);
+  if (dailyUser === null) {
+    dailyUser = new DailyUser(userDayID);
+    dailyUser.address = event.transaction.from;
     dailyMetrics.dailyActiveUsers = dailyMetrics.dailyActiveUsers.plus(
       BIGINT_ONE
     );
+    dailyUser.save();
   }
   dailyMetrics.numberOfTransactions = dailyMetrics.numberOfTransactions.plus(
     BIGINT_ONE
   );
   dailyMetrics.save();
+}
+
+export function updateWeeklyMetrics(event: RouterSwapEvent): void {
+  let weeklyMetrics = getOrCreateWeeklyMetrics(event);
+  let userWeekID = getWeekID(event)
+    .toString()
+    .concat(event.transaction.from.toHexString());
+  let weeklyUser = WeeklyUser.load(userWeekID);
+
+  if (weeklyUser === null) {
+    weeklyUser = new WeeklyUser(userWeekID);
+    weeklyUser.address = event.transaction.from;
+    weeklyMetrics.weeklyActiveUsers = weeklyMetrics.weeklyActiveUsers.plus(
+      BIGINT_ONE
+    );
+    weeklyUser.save();
+  }
+  weeklyMetrics.numberOfTransactions = weeklyMetrics.numberOfTransactions.plus(
+    BIGINT_ONE
+  );
+  weeklyMetrics.save();
+}
+
+export function updateMonthlyMetrics(event: RouterSwapEvent): void {
+  let monthlyMetrics = getOrCreateMonthlyMetrics(event);
+  let userMonthID = getMonthID(event)
+    .toString()
+    .concat(event.transaction.from.toHexString());
+
+  let monthlyUser = MonthlyUser.load(userMonthID);
+
+  if (monthlyUser === null) {
+    monthlyUser = new MonthlyUser(userMonthID);
+    monthlyUser.address = event.transaction.from;
+    monthlyUser.save();
+    monthlyMetrics.monthlyActiveUsers = monthlyMetrics.monthlyActiveUsers.plus(
+      BIGINT_ONE
+    );
+  }
+  monthlyMetrics.numberOfTransactions = monthlyMetrics.numberOfTransactions.plus(
+    BIGINT_ONE
+  );
+  monthlyMetrics.save();
 }
