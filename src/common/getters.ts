@@ -34,8 +34,11 @@ import {
   SECONDS_PER_DAY,
   SECONDS_PER_WEEK,
   STABLES_TOKENS,
+  USDCE_ADDRESS,
   USDC_ADDRESS,
   USDC_DECIMALS,
+  USDTE_ADDRESS,
+  USDT_ADDRESS,
   VAPORDEX_ROUTER_ADDRESS,
   VPND_ADDRESS,
   VPND_AVAX_PAIR,
@@ -124,14 +127,15 @@ export function getDailyID(event: RouterSwapEvent): number {
 }
 
 export function getUsdPrice(token: Token): BigDecimal {
-  if (token.id.toHexString() === VPND_ADDRESS.toHexString()) {
+  if (token.id.equals(VPND_ADDRESS)) {
     return getVPNDPriceInUSD();
-  } else if (token.id.toHexString() === WAVAX_ADDRESS.toHexString()) {
+  } else if (token.id.equals(WAVAX_ADDRESS)) {
     return getAVAXPriceInUSD();
   } else if (
-    STABLES_TOKENS.map<string>((token) => token.toHexString()).includes(
-      token.id.toHexString()
-    )
+    token.id.equals(USDT_ADDRESS) ||
+    token.id.equals(USDCE_ADDRESS) ||
+    token.id.equals(USDC_ADDRESS) ||
+    token.id.equals(USDTE_ADDRESS)
   ) {
     return BIGDECIMAL_ONE;
   } else {
@@ -225,14 +229,13 @@ export function getUSDPriceFromRouter(token: Token): BigDecimal {
   if (result.reverted) {
     return BIGDECIMAL_ZERO;
   }
-
-  let price = result.value.amounts[result.value.amounts.length - 1]
-    .toBigDecimal()
-    .div(BIGINT_THOUSAND.toBigDecimal());
-  log.info(
-    "Price",
-    result.value.amounts.map<string>((amount) => amount.toString())
-  );
+  let usdcAmount = result.value.amounts;
+  let price = BIGDECIMAL_ZERO;
+  if (usdcAmount.length > 0) {
+    price = usdcAmount[usdcAmount.length - 1]
+      .toBigDecimal()
+      .div(BIGINT_THOUSAND.toBigDecimal());
+  }
   return formatAmount(price, USDC_DECIMALS);
 }
 

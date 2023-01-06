@@ -22,7 +22,7 @@ import {
   UpdatedTrustedTokens,
   User,
 } from "../generated/schema";
-import { WAVAX_ADDRESS } from "./common/constants";
+import { BIGINT_ZERO, WAVAX_ADDRESS } from "./common/constants";
 import { formatAmount, getOrCreateToken, getUsdPrice } from "./common/getters";
 import {
   updateDailyMetrics,
